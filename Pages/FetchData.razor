@@ -1,0 +1,219 @@
+﻿@page "/tabelausuarios"
+@inject HttpClient client
+@using Newtonsoft.Json
+@using Data
+@using System.Text;
+@inject AppData appData
+
+<PageTitle>LIsta de Usuários</PageTitle>
+
+<div class="container-fluid">
+    <div>
+    <div class="col-3">
+        Usuário:<input type="text" class="form-control" id="inputUser" @bind-value="@adduser.Usuario">
+    </div>
+    <div class="col-3">
+        Senha:<input type="password" class="form-control" id="inputPassword" @bind-value="@adduser.Senha">
+    </div>
+    <div class="col-3">
+        Data de cadastro:<input type="datetime" class="form-control" id="dataCriacao" @bind-value="@adduser.DataAtual" readonly/>
+    </div>
+    <div class="col-3" style="margin-top:10px;">
+        <button type="submit" @onclick="CadastrarUsuario" @onclick:preventDefault
+            class="btn btn-primary mb-6">Cadastrar Usuario</button>
+    </div>
+    <p>@postStatus</p>
+    </div>
+    <div class="row justify-content-center" style="margin-bottom:50px">
+        <h3 class="text-center">Usuarios Cadastrados</h3>
+    </div>
+    <div class="row" style="margin=25px;">
+        <strong>Lista de usuários</strong>
+        @if (Users != null)
+        {
+            <table class="table table-bordered table-striped">
+                <thead class="">
+                    <tr>
+                        <th>Usuario</th>
+                        <th>Data de Criação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach(var user in Users)
+                    {
+                        <tr>
+                            <td>@user.Usuario</td>
+                            <td>@user.DataCriacao</td>
+                            <td><button type="button" @onclick="()=>UpdateUser(user.Id, user.Usuario, user.Senha, user.DataCriacao)"
+                                class="btn btn-primary mb-6">Atualizar</button></td>
+                            <td><button type="button" @onclick="()=>DeleteUser(user.Id)"
+                                class="btn btn-danger mb-6">Deletar</button></td>
+                        </tr>                        
+                    }
+                    @if (showModal)
+                    {
+                        <div class="modal fade show" id="myModal" style="display:block; background-color: rgba(168, 0, 233, 0.9);" aria-modal="true" role="dialog">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h4 class="modal-title">Atualizar entrada @Id</h4>
+                                        <button type="button" class="btn-danger" @onclick="ModalCancel">X</button>
+                                    </div>
+                                    <div class="modal-body container-fluid">
+                                        
+                                        <div class="col-5">
+                                            Usuario:<input class="form-control" type="text" @bind-value="@Usuario"></input>
+                                        </div>
+                                        <div class="col-5">
+                                            Senha:<input class="form-control" type="text" @bind-value="@Senha"></input>
+                                        </div>
+                                        <div class="col-5">
+                                            Data de Cadastro:<input class="form-control" type="datetime" @bind-value="@DataCriacao"></input>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-sucess" @onclick="ModalOk">OK</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </tbody>
+            </table>                
+        }
+    </div>
+    <div class="row" style="margin:10px;margin-bottom:50px">
+        <div class="col"><button @onclick="GetUsers" class="btn btn-warning">Atualizar Lista</button></div>
+    </div>
+</div>
+@code{
+    private string? Senha{ get; set; }
+    private string? postStatus;
+    private int Id{get;set;}
+    private string? Usuario{get;set;}
+    private DateTime DataCriacao{ get; set; }
+    public int? putId;
+    public string? putUser;
+    public string? putPwd;
+    public DateTime dataCriacao;
+    Login adduser = new Login();
+    List<Login>? Users;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var apiName = "http://jonatasx-001-site1.ftempurl.com/api/login/";
+        var httpResponse = await client.GetAsync(apiName);
+        if (httpResponse.IsSuccessStatusCode)
+        {
+            Users = new List<Login>();
+            var apiConteudo = await httpResponse.Content.ReadAsStringAsync();
+            Users = JsonConvert.DeserializeObject<List<Login>>(apiConteudo);
+            StateHasChanged();
+        }
+    }
+
+    private async void GetUsers()
+    {
+        var apiName = "http://jonatasx-001-site1.ftempurl.com/api/login/";
+        var httpResponse = await client.GetAsync(apiName);
+        if (httpResponse.IsSuccessStatusCode)
+        {
+            Users = new List<Login>();
+            var apiConteudo = await httpResponse.Content.ReadAsStringAsync();
+            Users = JsonConvert.DeserializeObject<List<Login>>(apiConteudo);
+            postStatus = "";
+            StateHasChanged();
+        }
+    }
+
+    private async Task CadastrarUsuario()
+    {
+        adduser.DataCriacao = adduser.DataAtual.ToLocalTime();
+        var apiName = "http://jonatasx-001-site1.ftempurl.com/api/login/";
+        var httpResponse = await client.PostAsJsonAsync<Login>(apiName,adduser);
+        if(httpResponse.IsSuccessStatusCode)
+        {
+            var postData = JsonConvert.SerializeObject(adduser);
+            var postresponse = await client.PostAsync(apiName, new StringContent(postData));
+            postStatus = "Cadastro efetuado com sucesso!";
+            StateHasChanged();
+            GetUsers();            
+        }            
+    }
+
+    private async Task DeleteUser(int id)
+    {
+        var apiName = $"http://jonatasx-001-site1.ftempurl.com/api/login/{id}";
+        postStatus = "Deletando:" + id;
+        var httpResponse = await client.DeleteAsync(apiName);
+        if (httpResponse.IsSuccessStatusCode)
+        {
+            GetUsers();
+        }
+    }
+
+    private void UpdateUser(int putId, string putUser, string putPwd, DateTime dataCriacao )
+    {
+        appData.Id = putId;
+        appData.Usuario = putUser;
+        appData.Senha = putPwd;
+        appData.DataCriacao = dataCriacao;
+        postStatus = $"Dados que serão atualizados:{appData.Id}-{appData.Usuario}";
+        Id = appData.Id;
+        Usuario = appData.Usuario;
+        Senha = appData.Senha;
+        DataCriacao = appData.DataCriacao;
+        ModalShow();
+    }
+
+    private async void RunUpdateUser()
+    {
+        appData.Id = Id;
+        appData.Usuario = Usuario;
+        appData.Senha = Senha;
+        DataCriacao = adduser.DataAtual;
+        var users = new Login
+        {
+                Id = appData.Id,
+                Usuario = appData.Usuario,
+                Senha = appData.Senha,
+                DataCriacao = adduser.DataAtual
+        };
+        var apiName = $"http://jonatasx-001-site1.ftempurl.com/api/login/{Id}";
+        var httpResponse = await client.PutAsJsonAsync<Login>(apiName, users);
+        if (httpResponse.IsSuccessStatusCode)
+        {
+            var putData = JsonConvert.SerializeObject(users);
+            var putResponse = await client.PutAsync(apiName, new StringContent(putData));
+            postStatus = "Cadastro efetuado com sucesso!";
+            GetUsers();
+        }
+    }
+
+    bool showModal = false;
+
+    void ModalShow()
+    {
+        showModal = true;
+    } 
+
+    void ModalCancel() =>showModal = false;
+
+    void ModalOk()
+    {
+        RunUpdateUser();
+        Console.WriteLine(putId);
+        Console.WriteLine(dataCriacao);
+        Console.WriteLine("Modal ok");
+        Console.WriteLine(Id);
+        Console.WriteLine(Usuario);
+        Console.WriteLine(Senha);
+        Console.WriteLine(DataCriacao);
+        Console.WriteLine(appData.Usuario);
+        Console.WriteLine(appData.Senha);
+        Console.WriteLine(appData.DataCriacao);
+
+        showModal = false;
+    }
+
+}

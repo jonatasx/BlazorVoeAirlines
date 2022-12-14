@@ -1,0 +1,26 @@
+﻿@page "/"
+@inject HttpClient client
+@using Newtonsoft.Json
+@using Data
+
+<PageTitle>Index</PageTitle>
+
+<div class="container-fluid">
+    <div class="row justify-content-center" style="margin-bottom:50px">
+       <h3  class="text-center">Seja bem vindo Xovem Xovem!</h3>
+    </div>
+    <div class="row" style="margin=25px;">
+        <SurveyPrompt />
+    </div>
+    <div class="container d-flex justify-content-center" style="height:50px;">
+        <img src="/img/voeairlineslogo.png" class="img-fluid" alt="VoeAirlines" width="360">
+
+
+    </div>
+    <div class="container d-flex justify-content-center" style="height:50px;">
+        <img src="/img/airplane.jpg" class="rounded" alt="airplane" width="1200" height="500">
+    </div>
+</div>
+@code {
+
+}
